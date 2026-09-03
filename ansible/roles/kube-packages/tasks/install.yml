@@ -1,0 +1,7 @@
+- name: Installing Kubectl, Kubeadm and Kubelet
+  apt:
+    name: 
+      - kubectl
+      - kubeadm
+      - kubelet
+    update_cache: true

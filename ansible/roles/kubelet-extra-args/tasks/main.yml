@@ -1,0 +1,5 @@
+- name: Set Provider Id And Cloud Provider On Kubelet
+  copy:
+    content: "KUBELET_EXTRA_ARGS=--provider-id=aws:///{{ placement.availability_zone }}/{{ instance_id }} --cloud-provider=external\n"
+    dest: /etc/default/kubelet
+    mode: "0644"

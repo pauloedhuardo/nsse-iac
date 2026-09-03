@@ -1,0 +1,9 @@
+plugin: amazon.aws.aws_ec2
+profile: default
+regions:
+  - us-east-1
+groups:
+  control_planes: "'nsse-production-control-plane' in ec2_tags.Name"
+  workers: "'nsse-production-worker' in ec2_tags.Name"
+hostnames:
+  - instance-id

@@ -1,0 +1,7 @@
+- name: Terraform Output
+  shell: terraform output -json > outputs.json
+  args:
+    chdir: "{{terraform_path}}/server"
+  delegate_to: localhost
+  become: false
+  run_once: true

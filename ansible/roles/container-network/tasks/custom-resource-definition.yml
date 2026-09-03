@@ -1,0 +1,28 @@
+- name: Download Calico CRD
+  get_url:
+    url: https://raw.githubusercontent.com/projectcalico/calico/v3.32.1/manifests/custom-resources.yaml
+    dest: /home/admin/custom-resources.yaml
+    mode: "0644"
+    force: true
+  register: calico_crd_download
+  until: calico_crd_download is succeeded
+  retries: 5
+  delay: 15
+
+- name: Replacing Calico Pod Network
+  replace:
+    path: /home/admin/custom-resources.yaml
+    regexp: '192\.168\.0\.0\/16'
+    replace: '10.244.0.0/16'
+
+# VXLANCrossSubnet usa roteamento nativo entre nodes da mesma subnet, e a AWS
+# descarta esses pacotes enquanto o source/dest check das ENIs estiver ligado.
+# VXLAN encapsula sempre, tornando o overlay independente desse atributo.
+- name: Forcing full VXLAN encapsulation
+  replace:
+    path: /home/admin/custom-resources.yaml
+    regexp: 'encapsulation:\s*VXLANCrossSubnet'
+    replace: 'encapsulation: VXLAN'
+
+- name: Installing Calico CRD
+  shell: kubectl apply --server-side --force-conflicts -f /home/admin/custom-resources.yaml

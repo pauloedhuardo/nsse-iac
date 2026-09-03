@@ -1,0 +1,13 @@
+- name: Download Calico Operator
+  get_url:
+    url: https://raw.githubusercontent.com/projectcalico/calico/v3.32.1/manifests/tigera-operator.yaml
+    dest: /home/admin/tigera-operator.yaml
+    mode: "0644"
+    force: true
+  register: calico_operator_download
+  until: calico_operator_download is succeeded
+  retries: 5
+  delay: 15
+
+- name: Installing Calico Operator
+  shell: kubectl apply --server-side --force-conflicts -f /home/admin/tigera-operator.yaml

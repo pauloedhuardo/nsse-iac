@@ -1,0 +1,79 @@
+#!/bin/bash
+
+function updateHostname(){
+    hostnamectl set-hostname $(curl http://169.254.169.254/latest/meta-data/hostname)
+}
+
+function installSystemsManagerAgentEc2(){
+
+    if [ ! -d "/tmp/ssm" ]; then
+        mkdir -p /tmp/ssm
+    fi
+    cd /tmp/ssm
+
+    if [ ! -f "amazon-ssm-agent.deb" ]; then
+        wget https://s3.amazonaws.com/ec2-downloads-windows/SSMAgent/latest/debian_amd64/amazon-ssm-agent.deb
+    fi
+
+    dpkg -i amazon-ssm-agent.deb
+}
+
+function installKubernetesDependenciesPackages(){
+    sleep 30
+    apt update -o Dpkg::Lock::Timeout=10 -y
+    apt install -o Dpkg::Lock::Timeout=10 -y apt-transport-https \
+        ca-certificates \
+        curl \
+        gpg
+}
+
+function installKebernetesPackages(){
+    curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.36/deb/Release.key |  \
+        gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+
+    echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.36/deb/ /' | \
+        tee /etc/apt/sources.list.d/kubernetes.list
+
+    apt update -o Dpkg::Lock::Timeout=10 -y
+    apt install -o Dpkg::Lock::Timeout=10 -y kubectl \
+        kubeadm \
+        kubelet
+    apt-mark hold kubelet \
+        kubeadm \
+        kubectl
+}
+
+function installContainerRuntime(){
+    curl -fsSL https://download.opensuse.org/repositories/isv:/cri-o:/stable:/v1.36/deb/Release.key | \
+        gpg --dearmor -o /etc/apt/keyrings/cri-o-apt-keyring.gpg
+
+    echo "deb [signed-by=/etc/apt/keyrings/cri-o-apt-keyring.gpg] https://download.opensuse.org/repositories/isv:/cri-o:/stable:/v1.36/deb/ /" | \
+        tee /etc/apt/sources.list.d/cri-o.list
+
+    apt update -o Dpkg::Lock::Timeout=10 -y
+    apt install -o Dpkg::Lock::Timeout=10 -y cri-o \
+        cri-tools
+
+    systemctl start crio.service
+    sysctl -w net.ipv4.ip_forward=1
+
+}
+
+function joinWorkerNode(){
+    {{joinWorkerCommand}}
+}
+
+function setProviderId(){
+    instanceId=$(curl -s http://169.254.169.254/latest/meta-data/instance-id)
+    availabilityZone=$(curl -s http://169.254.169.254/latest/meta-data/placement/availability-zone)
+
+    echo "KUBELET_EXTRA_ARGS=--provider-id=aws:///$availabilityZone/$instanceId --cloud-provider=external" > /etc/default/kubelet
+}
+
+updateHostname
+installSystemsManagerAgentEc2
+installKubernetesDependenciesPackages
+installKebernetesPackages
+installContainerRuntime
+setProviderId
+joinWorkerNode

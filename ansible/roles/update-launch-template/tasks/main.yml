@@ -1,0 +1,14 @@
+- name: Creating Worker Launch Template
+  vars:
+    joinWorkerCommand: "{{ lookup('file', '/tmp/kubeadm-join-worker.txt') }}"
+  template:
+    src: worker-user-data-v2.j2
+    dest: /tmp/worker-user-data-v2.sh
+
+- name: Update Worker Launch Template
+  vars:
+    terraform_outputs: "{{ lookup('file', terraform_path ~ '/server/outputs.json') | from_json }}"
+    worker_launch_template_id: "{{ terraform_outputs.worker_launch_template_id.value }}"
+  ec2_launch_template:
+    template_id: "{{ worker_launch_template_id }}"
+    user_data: "{{ lookup('file', '/tmp/worker-user-data-v2.sh') | b64encode }}"

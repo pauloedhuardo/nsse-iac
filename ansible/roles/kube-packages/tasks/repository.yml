@@ -1,0 +1,20 @@
+- name: Ensure Apt Keyrings Directory Exists
+  file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: "0755"
+
+- name: Adding Public Signing Key for Kubernetes
+  get_url:
+    url: https://pkgs.k8s.io/core:/stable:/v1.36/deb/Release.key
+    dest: /etc/apt/keyrings/kubernetes-apt-keyring.asc
+    mode: "0644"
+
+- name: Add Kubernetes Repository
+  deb822_repository:
+    name: kubernetes
+    types: deb
+    uris: https://pkgs.k8s.io/core:/stable:/v1.36/deb/
+    suites: /
+    signed_by: /etc/apt/keyrings/kubernetes-apt-keyring.asc
+    state: present

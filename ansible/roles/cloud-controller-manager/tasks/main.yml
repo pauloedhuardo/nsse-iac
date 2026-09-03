@@ -1,0 +1,20 @@
+- name: Upload AWS CCM Manifests
+  copy:
+    src: "{{ item }}"
+    dest: "/home/admin/{{ item }}"
+    mode: "0644"
+  loop:
+    - service-account.yaml
+    - cluster-role.yaml
+    - cluster-role-binding.yaml
+    - apiserver-authentication-reader-role-binding.yaml
+    - aws-cloud-controller-manager-daemonset.yaml
+
+- name: Installing AWS CCM
+  shell: >
+    kubectl apply
+    -f /home/admin/service-account.yaml
+    -f /home/admin/cluster-role.yaml
+    -f /home/admin/cluster-role-binding.yaml
+    -f /home/admin/apiserver-authentication-reader-role-binding.yaml
+    -f /home/admin/aws-cloud-controller-manager-daemonset.yaml

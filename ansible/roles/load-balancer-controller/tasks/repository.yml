@@ -1,0 +1,4 @@
+- name: Adding AWS Load Balancer Controller Repository
+  shell: |
+    helm repo add eks https://aws.github.io/eks-charts
+    helm repo update

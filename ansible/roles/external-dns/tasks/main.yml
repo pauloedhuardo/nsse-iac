@@ -1,0 +1,11 @@
+- name: Installing External DNS
+  shell: |
+    helm repo add external-dns https://kubernetes-sigs.github.io/external-dns/
+    helm upgrade --install external-dns external-dns/external-dns --version 1.21.1 -n kube-system \
+      --set env[0].name=AWS_DEFAULT_REGION \
+      --set env[0].value=us-east-1 \
+      --set policy=sync \
+      --set txtOwnerId=nsse-production \
+      --set 'domainFilters[0]=s2sinovatec.com' \
+      --wait --timeout 5m
+

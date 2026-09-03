@@ -1,0 +1,8 @@
+- name: Installing dependencies packages
+  apt:
+    name: 
+      - apt-transport-https 
+      - ca-certificates 
+      - curl 
+      - gpg
+    update_cache: true

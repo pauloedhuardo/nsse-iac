@@ -1,0 +1,24 @@
+apiVersion: kubeadm.k8s.io/v1beta4
+kind: InitConfiguration
+nodeRegistration:
+  criSocket: "unix:///var/run/crio/crio.sock"
+  kubeletExtraArgs:
+    - name: cloud-provider
+      value: external
+localAPIEndpoint:
+  advertiseAddress: "{{ ansible_default_ipv4.address }}"
+  bindPort: 6443
+---
+apiVersion: kubeadm.k8s.io/v1beta4
+kind: ClusterConfiguration
+networking:
+  podSubnet: "10.244.0.0/16"
+controlPlaneEndpoint: "{{nlb_dns_name}}:6443"
+apiServer:
+  certSANs:
+    - "localhost"
+clusterName: "devops-na-nuvem-cluster"
+controllerManager:
+  extraArgs:
+    - name: cloud-provider
+      value: external

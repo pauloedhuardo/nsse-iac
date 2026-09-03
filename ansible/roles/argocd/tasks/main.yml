@@ -1,0 +1,17 @@
+- name: Creating ArgoCD Namespace
+  shell: kubectl create namespace argocd --dry-run=client -o yaml | kubectl apply -f -
+
+- name: Installing ArgoCD
+  shell: >
+    kubectl apply -n argocd --server-side --force-conflicts
+    -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+  register: argocd_apply
+  until: argocd_apply.rc == 0
+  retries: 5
+  delay: 15
+
+- name: Enabling Helm Support In Kustomize
+  shell: |
+    kubectl -n argocd patch cm argocd-cm --type merge \
+      -p '{"data":{"kustomize.buildOptions":"--enable-helm"}}'
+    kubectl -n argocd rollout restart deploy argocd-repo-server

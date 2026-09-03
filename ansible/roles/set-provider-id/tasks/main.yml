@@ -1,0 +1,10 @@
+- name: Patch Provider Id
+  shell: >
+    kubectl patch node {{ private_dns_name }}
+    -p '{"spec":{"providerID":"aws:///{{ placement.availability_zone }}/{{ instance_id }}"}}'
+  delegate_to: "{{ groups['control_planes'][0] }}"
+  environment:
+    KUBECONFIG: "{{ kube_config }}"
+  register: patch_provider_id
+  changed_when: "'patched' in patch_provider_id.stdout"
+

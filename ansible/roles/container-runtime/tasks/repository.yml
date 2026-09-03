@@ -1,0 +1,14 @@
+- name: Adding Public Signing Key for CRI-O
+  get_url:
+    url: https://download.opensuse.org/repositories/isv:/cri-o:/stable:/v1.36/deb/Release.key
+    dest: /etc/apt/keyrings/cri-o-apt-keyring.asc
+    mode: "0644"
+
+- name: Add CRI-O Repository
+  deb822_repository:
+    name: cri-o
+    types: deb
+    uris: https://download.opensuse.org/repositories/isv:/cri-o:/stable:/v1.36/deb/
+    suites: /
+    signed_by: /etc/apt/keyrings/cri-o-apt-keyring.asc
+    state: present
