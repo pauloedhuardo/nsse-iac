@@ -4,7 +4,7 @@ resource "aws_cloudfront_distribution" "this" {
   price_class                     = var.cloudfront.price_class
   aliases                         = [var.domain]
   web_acl_id                      = aws_wafv2_web_acl.this.arn
-  continuous_deployment_policy_id = aws_cloudfront_continuous_deployment_policy.this.id
+  continuous_deployment_policy_id = var.attach_continuous_deployment_policy ? aws_cloudfront_continuous_deployment_policy.this.id : null
 
   origin {
     vpc_origin_config {
