@@ -25,11 +25,13 @@ variable "tags" {
 
 variable "cloudfront" {
   type = object({
-    s3_site_bucket_name      = string
-    s3_site_logs_bucket_name = string
-    enabled                  = bool
-    default_root_object      = string
-    price_class              = string
+    s3_site_bucket_name              = string
+    s3_site_logs_bucket_name         = string
+    s3_staging_site_bucket_name      = string
+    s3_staging_site_logs_bucket_name = string
+    enabled                          = bool
+    default_root_object              = string
+    price_class                      = string
     alb_vpc_origin = object({
       name                   = string
       http_port              = number
@@ -56,11 +58,13 @@ variable "cloudfront" {
     }))
   })
   default = {
-    s3_site_bucket_name      = "s2sinovatec.com"
-    s3_site_logs_bucket_name = "s2sinovatec.com-logs"
-    enabled                  = true
-    default_root_object      = "index.html"
-    price_class              = "PriceClass_All"
+    s3_site_bucket_name              = "s2sinovatec.com"
+    s3_site_logs_bucket_name         = "s2sinovatec.com-logs"
+    s3_staging_site_bucket_name      = "staging.s2sinovatec.com"
+    s3_staging_site_logs_bucket_name = "staging.s2sinovatec.com-logs"
+    enabled                          = true
+    default_root_object              = "index.html"
+    price_class                      = "PriceClass_All"
     alb_vpc_origin = {
       name                   = "nsse-internal-vpc-origin"
       http_port              = 80
