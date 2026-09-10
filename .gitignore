@@ -21,3 +21,5 @@ node_modules/
 # Credenciais
 *.pem
 !**/documentdb-ca.pem
+
+terraform/serverless-minimal

@@ -61,6 +61,7 @@
     - helm
     - node-termination
     - cluster-autoscaler
+    - argo-rollouts
     - argocd
     - metrics-server
     - load-balancer-controller

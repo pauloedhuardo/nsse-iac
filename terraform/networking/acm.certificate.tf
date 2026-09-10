@@ -1,7 +1,12 @@
 resource "aws_acm_certificate" "this" {
-  domain_name       = var.domain
-  validation_method = "DNS"
-  tags              = var.tags
+  domain_name               = var.domain
+  subject_alternative_names = ["*.${var.domain}"]
+  validation_method         = "DNS"
+  tags                      = var.tags
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 resource "aws_route53_record" "this" {

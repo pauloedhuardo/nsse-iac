@@ -1,0 +1,26 @@
+- name: Creating Argo Rollouts Namespace
+  shell: kubectl create namespace argo-rollouts --dry-run=client -o yaml | kubectl apply -f -
+
+# Server side apply is required here, the Rollout CRD is larger than the
+# 262144 bytes limit of the last-applied-configuration annotation.
+- name: Installing Argo Rollouts
+  shell: >
+    kubectl apply -n argo-rollouts --server-side --force-conflicts
+    -f https://github.com/argoproj/argo-rollouts/releases/latest/download/install.yaml
+  register: argo_rollouts_apply
+  until: argo_rollouts_apply.rc == 0
+  retries: 5
+  delay: 15
+
+- name: Waiting For Argo Rollouts CRDs
+  shell: >
+    kubectl wait --for condition=established --timeout=120s
+    crd/rollouts.argoproj.io
+    crd/analysistemplates.argoproj.io
+    crd/analysisruns.argoproj.io
+    crd/experiments.argoproj.io
+    crd/clusteranalysistemplates.argoproj.io
+
+- name: Waiting For Argo Rollouts Controller
+  shell: >
+    kubectl -n argo-rollouts rollout status deploy/argo-rollouts --timeout=300s

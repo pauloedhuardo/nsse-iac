@@ -12,8 +12,11 @@ resource "aws_iam_role" "github_frontend" {
           Federated = aws_iam_openid_connect_provider.github.arn
         }
         Condition = {
+          # GitHub emits the immutable subject claim, which carries the owner id
+          # (81598234) and the repository id (1357313343) instead of names only:
+          # repo:pauloedhuardo@81598234/not-so-simple-ecommerce@1357313343:environment:staging
           StringLike = {
-            "token.actions.githubusercontent.com:sub" = "repo:pauloedhuardo/not-so-simple-ecommerce:*"
+            "token.actions.githubusercontent.com:sub" = "repo:pauloedhuardo@81598234/not-so-simple-ecommerce@1357313343:*"
           }
           StringEquals = {
             "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
