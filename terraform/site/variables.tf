@@ -140,14 +140,6 @@ variable "domain" {
   default = "s2sinovatec.com"
 }
 
-# A API do CloudFront nao aceita ContinuousDeploymentPolicyId no CreateDistribution,
-# apenas no UpdateDistribution. Mantenha false no apply que cria a distribuicao de
-# producao e troque para true em um segundo apply para anexar a policy.
-variable "attach_continuous_deployment_policy" {
-  type    = bool
-  default = false
-}
-
 variable "waf_webacl" {
   type = object({
     name  = string
