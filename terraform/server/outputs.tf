@@ -13,3 +13,8 @@ output "worker_launch_template_id" {
 output "node_termination_queue_url" {
   value = aws_sqs_queue.node_termination.id
 }
+# ARN para preencher a variable AWS_BACKEND_ROLE_TO_ASSUME no environment
+# production do repositorio not-so-simple-ecommerce.
+output "github_backend_role_arn" {
+  value = aws_iam_role.github_backend.arn
+}
