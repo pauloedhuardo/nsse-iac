@@ -1,10 +1,14 @@
 resource "aws_cloudfront_distribution" "this" {
-  enabled                         = var.cloudfront.enabled
-  default_root_object             = var.cloudfront.default_root_object
-  price_class                     = var.cloudfront.price_class
-  aliases                         = [var.domain]
-  web_acl_id                      = aws_wafv2_web_acl.this.arn
-  continuous_deployment_policy_id = aws_cloudfront_continuous_deployment_policy.this.id
+  enabled             = var.cloudfront.enabled
+  default_root_object = var.cloudfront.default_root_object
+  price_class         = var.cloudfront.price_class
+  aliases             = [var.domain]
+  web_acl_id          = aws_wafv2_web_acl.this.arn
+  # null aqui significa "nao gerencio este campo": o provider omite o campo no
+  # CreateDistribution (que e o que a API exige) mas NAO o remove num update -
+  # o atributo e Optional+Computed, entao o valor do servidor e preservado.
+  # Por isso o detach do destroy.sh sai pela AWS CLI, e nao por aqui.
+  continuous_deployment_policy_id = var.attach_continuous_deployment_policy ? aws_cloudfront_continuous_deployment_policy.this.id : null
   wait_for_deployment             = false
 
   origin {

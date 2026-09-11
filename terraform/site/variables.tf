@@ -140,6 +140,17 @@ variable "domain" {
   default = "s2sinovatec.com"
 }
 
+# A API do CloudFront nao aceita ContinuousDeploymentPolicyId no CreateDistribution,
+# apenas no UpdateDistribution - e tambem recusa deletar a policy enquanto ela
+# estiver anexada. Por isso o ciclo do site tem dois passos em cada direcao.
+#
+# Nao mexa nesta variavel na mao: use ./apply.sh e ./destroy.sh, que cuidam da
+# sequencia. O default e o do passo 1 (criar sem anexar).
+variable "attach_continuous_deployment_policy" {
+  type    = bool
+  default = false
+}
+
 variable "waf_webacl" {
   type = object({
     name  = string
