@@ -17,7 +17,8 @@
 #
 set -euo pipefail
 
-cd "$(dirname "$0")"
+# O script vive em site/cli/, o modulo terraform e o diretorio acima.
+cd "$(dirname "$0")/.."
 
 echo "==> passo 1/2: criando o site sem a continuous deployment policy"
 terraform apply -var 'attach_continuous_deployment_policy=false' "$@"

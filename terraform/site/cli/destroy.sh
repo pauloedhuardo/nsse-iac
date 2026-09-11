@@ -20,9 +20,20 @@
 #
 set -euo pipefail
 
-cd "$(dirname "$0")"
+# O script vive em site/cli/, o modulo terraform e o diretorio acima.
+cd "$(dirname "$0")/.."
 
 echo "==> passo 1/2: desanexando a continuous deployment policy"
+
+# Distingue "state sem a distribuicao" (no-op legitimo) de "terraform falhou"
+# (modulo nao inicializado, diretorio errado). Sem isso, qualquer falha do
+# terraform viraria um "nada a desanexar" silencioso e o passo 2 tentaria
+# destruir com a policy ainda anexada.
+if ! terraform output -json > /dev/null 2>&1; then
+  echo "ERRO: 'terraform output' falhou em $(pwd)." >&2
+  echo "      rode 'terraform init' no modulo antes do destroy." >&2
+  exit 1
+fi
 
 DIST_ID="$(terraform output -raw cloudfront_distribution_id 2>/dev/null || true)"
 
