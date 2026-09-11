@@ -9,7 +9,7 @@ resource "aws_iam_role" "github_backend" {
         Effect = "Allow"
         Sid    = ""
         Principal = {
-          Federated = data.aws_iam_openid_connect_provider.github.arn
+          Federated = aws_iam_openid_connect_provider.github.arn
         }
         Condition = {
           # Mesmo subject imutavel do role de frontend: o repositorio foi criado

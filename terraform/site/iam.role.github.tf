@@ -9,7 +9,7 @@ resource "aws_iam_role" "github_frontend" {
         Effect = "Allow"
         Sid    = ""
         Principal = {
-          Federated = aws_iam_openid_connect_provider.github.arn
+          Federated = data.aws_iam_openid_connect_provider.github.arn
         }
         Condition = {
           # GitHub emits the immutable subject claim, which carries the owner id
