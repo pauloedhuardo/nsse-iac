@@ -22,4 +22,8 @@ node_modules/
 *.pem
 !**/documentdb-ca.pem
 
+# Regenerado por `terraform output -json` a cada execucao do Ansible.
+# Contem a chave privada do key pair EC2, entao nao pode ser versionado.
+terraform/server/outputs.json
+
 terraform/serverless-minimal
