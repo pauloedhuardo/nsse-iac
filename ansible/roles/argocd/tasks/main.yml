@@ -15,3 +15,21 @@
     kubectl -n argocd patch cm argocd-cm --type merge \
       -p '{"data":{"kustomize.buildOptions":"--enable-helm"}}'
     kubectl -n argocd rollout restart deploy argocd-repo-server
+
+- name: Waiting For ArgoCD Application CRD
+  shell: kubectl wait --for condition=established --timeout=120s crd/applications.argoproj.io
+
+- name: Waiting For ArgoCD Application Controller
+  shell: kubectl -n argocd rollout status statefulset/argocd-application-controller --timeout=300s
+
+# O cluster e recriado todo dia, entao o Application precisa voltar junto,
+# senao o Argo CD sobe sem nada para sincronizar e o gitops nao chega no cluster.
+# Aplicado direto do repositorio publico para nao duplicar o manifesto aqui.
+- name: Creating NSSE Application
+  shell: >
+    kubectl apply
+    -f https://raw.githubusercontent.com/pauloedhuardo/nsse-gitops/main/argocd/application.yml
+  register: nsse_application_apply
+  until: nsse_application_apply.rc == 0
+  retries: 5
+  delay: 15
