@@ -1,6 +1,6 @@
 ansible_connection: aws_ssm
 ansible_aws_ssm_bucket_name: nsse-ansible-ssm-495624154773
-terraform_path: /home/paulo/Repositories/nsse-iac/terraform
+terraform_path: "{{ playbook_dir | dirname }}/terraform"
 kube_config: /etc/kubernetes/admin.conf
 kube_config_worker: /etc/kubernetes/kubelet.conf
 aws_profile: default

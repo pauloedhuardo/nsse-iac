@@ -26,4 +26,3 @@ node_modules/
 # Contem a chave privada do key pair EC2, entao nao pode ser versionado.
 terraform/server/outputs.json
 
-terraform/serverless-minimal
