@@ -1,0 +1,12 @@
+- name: Creating Fluent Bit Values File
+  template:
+    src: values.yaml.j2
+    dest: /tmp/fluent-bit-values.yaml
+
+- name: Installing Fluent Bit
+  shell: |
+    helm upgrade --install {{ fluent_bit_release_name }} fluent/fluent-bit \
+      --namespace {{ fluent_bit_namespace }} \
+      --version {{ fluent_bit_chart_version }} \
+      --values /tmp/fluent-bit-values.yaml \
+      --wait --timeout 5m

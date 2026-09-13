@@ -1,0 +1,17 @@
+fluent_bit_chart_version: "0.58.2"
+fluent_bit_release_name: fluent-bit
+fluent_bit_namespace: logging
+fluent_bit_opensearch_secret: fluent-bit-opensearch
+
+# Somente os namespaces listados sao enviados ao OpenSearch. Dentro deles, os
+# pods cujo nome comeca com um dos prefixos abaixo sao descartados -- o proprio
+# fluent-bit fica de fora para nao realimentar os proprios logs.
+fluent_bit_namespaces:
+  - nsse
+  - argocd
+
+fluent_bit_exclude_pods:
+  - fluent-bit
+
+# Prefixo do indice diario no OpenSearch: nsse-YYYY.MM.DD
+fluent_bit_index_prefix: nsse

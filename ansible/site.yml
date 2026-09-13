@@ -67,6 +67,7 @@
     - load-balancer-controller
     - container-storage
     - external-dns
+    - fluent-bit
 
     
 
