@@ -25,7 +25,7 @@ terraform {
 
   backend "s3" {
     bucket       = "nsse-terraform-state-files-p"
-    key          = "serverless/terraform.tfstate"
+    key          = "serverless-minimal/terraform.tfstate"
     use_lockfile = true
     region       = "us-east-1"
   }
