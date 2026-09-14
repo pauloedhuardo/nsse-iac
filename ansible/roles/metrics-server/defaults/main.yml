@@ -1,0 +1,6 @@
+metrics_server_manifest_url: https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/high-availability-1.21+.yaml
+
+# A 10250 do manifesto upstream e a mesma porta do kubelet nos nodes. O
+# manifesto referencia a porta pelo nome (probes e targetPort do Service usam
+# "https"), entao trocar so o numero e auto-consistente.
+metrics_server_secure_port: 4443

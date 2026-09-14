@@ -18,3 +18,10 @@ output "opensearch_logs_reader_password" {
 output "opensearch_logs_writer_backend_roles" {
   value = local.logs_writer_backend_roles
 }
+
+output "opensearch_retention_policies" {
+  value = {
+    for name, policy in var.opensearch_retention :
+    opensearch_ism_policy.retention[name].policy_id => policy.min_index_age
+  }
+}

@@ -1,0 +1,47 @@
+# Gerado pela role otel-collector. Editar a role, nao o cluster.
+mode: deployment
+
+# Uma replica e obrigatorio: o k8s_cluster le o estado do cluster inteiro, entao
+# cada replica extra duplicaria todos os documentos.
+replicaCount: 1
+
+image:
+  repository: {{ otel_collector_image }}
+  tag: "{{ otel_collector_image_tag }}"
+
+presets:
+  # Estado do cluster: replicas desejadas x prontas, condicoes de node, fase dos
+  # pods. E o papel que o kube-state-metrics cumpre num stack Prometheus.
+  clusterMetrics:
+    enabled: true
+
+config:
+  receivers:
+    k8s_cluster:
+      collection_interval: {{ otel_collector_scrape_interval }}
+
+  processors:
+    memory_limiter:
+      check_interval: 5s
+      limit_percentage: 80
+      spike_limit_percentage: 20
+
+    batch:
+      timeout: 10s
+      send_batch_size: 1024
+
+  exporters:
+    otlp_grpc/data-prepper:
+      endpoint: {{ otel_collector_exporter_endpoint }}
+      tls:
+        insecure: true
+
+  service:
+    pipelines:
+      metrics:
+        receivers: [k8s_cluster]
+        processors: [memory_limiter, batch]
+        exporters: [otlp_grpc/data-prepper]
+
+      traces: null
+      logs: null

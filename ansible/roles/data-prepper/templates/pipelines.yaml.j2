@@ -1,0 +1,35 @@
+# Gerado pela role data-prepper. Editar a role, nao o cluster.
+otel-metrics-pipeline:
+  workers: 2
+  delay: 3000
+
+  source:
+    otel_metrics_source:
+      # O default do plugin e ssl: true, que exige um par de certificados no
+      # proprio Data Prepper. O trafego OTLP nao sai do cluster.
+      ssl: false
+      port: {{ data_prepper_otel_metrics_port }}
+
+  buffer:
+    bounded_blocking:
+      buffer_size: 4096
+      batch_size: 512
+
+  processor:
+    # Converte o ExportMetricsServiceRequest em documento plano. Sem isto o
+    # sink recebe protobuf serializado. Histogramas exponenciais ficam de fora
+    # porque nenhum receiver usado aqui os emite e o calculo e caro.
+    - otel_metrics:
+        calculate_histogram_buckets: true
+        calculate_exponential_histogram_buckets: false
+        flatten_attributes: false
+
+  sink:
+    - opensearch:
+        hosts: ["https://{{ opensearch_endpoint }}"]
+        username: "{{ opensearch_user }}"
+        password: "{{ opensearch_password }}"
+        index_type: custom
+        index: "{{ data_prepper_metrics_index_prefix }}-%{yyyy.MM.dd}"
+        bulk_size: 5
+        max_retries: 5

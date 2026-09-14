@@ -1,0 +1,17 @@
+# Gerado pela role data-prepper. Editar a role, nao o cluster.
+replicaCount: 1
+
+pipelineConfig:
+  # O Secret e criado na credentials.yml, fora do chart, porque o pipeline
+  # carrega a senha do OpenSearch.
+  enabled: false
+  existingSecret: {{ data_prepper_pipelines_secret }}
+
+# Aplicacao JVM: sem request de memoria ela vira a primeira candidata a despejo
+# quando o node aperta.
+resources:
+  requests:
+    cpu: 200m
+    memory: 512Mi
+  limits:
+    memory: 1Gi

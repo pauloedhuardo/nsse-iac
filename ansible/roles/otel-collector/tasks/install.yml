@@ -1,0 +1,34 @@
+# O namespace vem da role data-prepper, que roda antes. Recriado aqui para a
+# role continuar aplicavel sozinha.
+- name: Creating Observability Namespace
+  shell: kubectl create namespace {{ otel_collector_namespace }} --dry-run=client -o yaml | kubectl apply -f -
+
+- name: Creating OpenTelemetry Collector Values Files
+  template:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+  loop:
+    - { src: values-agent.yaml.j2, dest: /tmp/otel-agent-values.yaml }
+    - { src: values-cluster.yaml.j2, dest: /tmp/otel-cluster-values.yaml }
+
+- include_tasks: validate.yml
+
+# --atomic em vez de --wait: se o rollout falhar mesmo assim, o helm reverte
+# para a revisao anterior e libera o lock, em vez de deixar o release preso em
+# pending-upgrade. A falha continua sendo reportada aqui -- o que muda e que o
+# cluster nao fica num estado que bloqueia a proxima execucao.
+- name: Installing OpenTelemetry Collector Agent
+  shell: |
+    helm upgrade --install {{ otel_collector_agent_release_name }} open-telemetry/opentelemetry-collector \
+      --namespace {{ otel_collector_namespace }} \
+      --version {{ otel_collector_chart_version }} \
+      --values /tmp/otel-agent-values.yaml \
+      --atomic --timeout 5m
+
+- name: Installing OpenTelemetry Collector Cluster
+  shell: |
+    helm upgrade --install {{ otel_collector_cluster_release_name }} open-telemetry/opentelemetry-collector \
+      --namespace {{ otel_collector_namespace }} \
+      --version {{ otel_collector_chart_version }} \
+      --values /tmp/otel-cluster-values.yaml \
+      --atomic --timeout 5m

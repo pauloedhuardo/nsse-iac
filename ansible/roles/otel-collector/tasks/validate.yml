@@ -1,0 +1,96 @@
+# Erro de configuracao do collector (opcao faltando, receiver mal parametrizado)
+# so aparece quando o processo sobe. Sem esta checagem o sintoma e indireto e
+# caro: o pod entra em CrashLoopBackOff, o "helm upgrade --wait" fica preso ate
+# o timeout e o release trava em pending-upgrade, bloqueando toda execucao
+# seguinte com "another operation is in progress".
+#
+# A validacao roda o subcomando "validate" do proprio binario, na mesma imagem
+# do workload, sobre a config exatamente como o helm a renderizaria. O
+# "helm template" nao toca no cluster, e o nome de release temporario faz o
+# ConfigMap renderizado nao colidir com o que esta em producao.
+- name: Validating OpenTelemetry Collector Configuration
+  shell: |
+    set -o pipefail
+    NS={{ otel_collector_namespace }}
+    REL=otel-validate-{{ item.name }}
+    CM=""
+
+    cleanup() {
+      kubectl delete pod/$REL $CM -n $NS --ignore-not-found --wait=false >/dev/null 2>&1 || true
+    }
+    trap cleanup EXIT
+
+    CM=$(helm template $REL open-telemetry/opentelemetry-collector \
+      --namespace $NS \
+      --version {{ otel_collector_chart_version }} \
+      --values {{ item.values_file }} \
+      --show-only {{ item.configmap }} \
+      | kubectl apply -n $NS -f - -o name)
+
+    # O hostPath em /hostfs existe porque o hostmetrics valida o root_path na
+    # carga da config; sem ele a validacao falha por um motivo que nao e a config.
+    kubectl apply -n $NS -f - <<YAML
+    apiVersion: v1
+    kind: Pod
+    metadata:
+      name: $REL
+    spec:
+      restartPolicy: Never
+      tolerations:
+        - key: node-role.kubernetes.io/control-plane
+          operator: Exists
+          effect: NoSchedule
+      containers:
+        - name: validate
+          image: {{ otel_collector_image }}:{{ otel_collector_image_tag }}
+          # "relay" e o nome da chave no ConfigMap do chart, nao relay.yaml.
+          args: ["validate", "--config=/cfg/relay"]
+          env:
+            - name: K8S_NODE_NAME
+              valueFrom: { fieldRef: { fieldPath: spec.nodeName } }
+            - name: K8S_NODE_IP
+              valueFrom: { fieldRef: { fieldPath: status.hostIP } }
+            - name: MY_POD_IP
+              valueFrom: { fieldRef: { fieldPath: status.podIP } }
+          volumeMounts:
+            - { name: cfg, mountPath: /cfg }
+            - { name: hostfs, mountPath: /hostfs, readOnly: true }
+      volumes:
+        - name: cfg
+          configMap: { name: ${CM#configmap/} }
+        - name: hostfs
+          hostPath: { path: / }
+    YAML
+
+    for _ in $(seq 60); do
+      PHASE=$(kubectl get pod $REL -n $NS -o jsonpath='{.status.phase}' 2>/dev/null)
+
+      if [ "$PHASE" = Succeeded ]; then
+        exit 0
+      fi
+
+      if [ "$PHASE" = Failed ]; then
+        echo "Configuracao invalida em {{ item.name }}:" >&2
+        kubectl logs $REL -n $NS >&2
+        exit 1
+      fi
+
+      sleep 2
+    done
+
+    echo "Timeout aguardando a validacao de {{ item.name }}" >&2
+    exit 1
+  args:
+    executable: /bin/bash
+  changed_when: false
+  loop:
+    # O template do ConfigMap muda com o mode: daemonset usa configmap-agent.yaml,
+    # deployment usa configmap.yaml.
+    - name: agent
+      # "values" nao serve como chave: em Jinja, item.values resolve para o
+      # metodo dict.values() em vez da chave do dicionario.
+      values_file: /tmp/otel-agent-values.yaml
+      configmap: templates/configmap-agent.yaml
+    - name: cluster
+      values_file: /tmp/otel-cluster-values.yaml
+      configmap: templates/configmap.yaml

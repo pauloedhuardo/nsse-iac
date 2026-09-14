@@ -1,3 +1,17 @@
+# A porta e o --kubelet-insecure-tls sao trocados no manifesto, antes do apply,
+# e nao com um kubectl patch depois.
+#
+# Motivo: containerPort e a merge key da lista de ports. Com o patch aplicado
+# depois, o apply seguinte nao encontra a 4443 no manifesto upstream, trata a
+# 10250 como porta nova e anexa -- o Deployment fica com duas portas chamadas
+# "https" e a API rejeita ("Duplicate value"). Transformando antes, o apply
+# manda o estado final e a segunda execucao vira no-op.
 - name: Install Metrics Server
   shell: |
-    kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/high-availability-1.21+.yaml
+    set -o pipefail
+    curl -fsSL {{ metrics_server_manifest_url }} \
+      | sed -e 's|- --secure-port=10250|- --secure-port={{ metrics_server_secure_port }}\n        - --kubelet-insecure-tls|' \
+            -e 's|- containerPort: 10250|- containerPort: {{ metrics_server_secure_port }}|' \
+      | kubectl apply -f -
+  args:
+    executable: /bin/bash

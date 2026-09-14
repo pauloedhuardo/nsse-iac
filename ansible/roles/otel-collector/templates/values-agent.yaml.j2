@@ -1,0 +1,132 @@
+# Gerado pela role otel-collector. Editar a role, nao o cluster.
+mode: daemonset
+
+image:
+  repository: {{ otel_collector_image }}
+  tag: "{{ otel_collector_image_tag }}"
+
+# Mesma tolerancia do fluent-bit: os control planes sao tainted e sem ela as
+# metricas deles ficariam de fora.
+tolerations:
+  - key: node-role.kubernetes.io/control-plane
+    operator: Exists
+    effect: NoSchedule
+
+# O preset concede pods, namespaces, replicasets e nodes/stats. As metricas de
+# utilization precisam de mais duas coisas que ele nao cobre, e a falta de
+# qualquer uma zera o kubeletstats silenciosamente (403 no scrape, pod saudavel):
+#
+#   nodes       capacity do node, lida via API para as *.node.utilization
+#   nodes/pods  endpoint /pods do kubelet, de onde saem limits e requests --
+#               o /stats/summary sozinho so entrega valor absoluto
+#
+# As regras daqui somam as do preset, nao substituem.
+clusterRole:
+  create: true
+  rules:
+    - apiGroups: [""]
+      resources: ["nodes", "nodes/pods"]
+      verbs: ["get", "list", "watch"]
+
+presets:
+  # /stats/summary do kubelet: CPU, memoria, rede e volume por pod e container.
+  # E o equivalente direto do modulo kubernetes do Metricbeat.
+  kubeletMetrics:
+    enabled: true
+
+  # CPU, memoria, disco, rede e carga do host.
+  hostMetrics:
+    enabled: true
+
+  # Anexa namespace, pod, deployment e node em cada metrica; sem isto os
+  # documentos chegam ao OpenSearch sem dimensao para agrupar.
+  kubernetesAttributes:
+    enabled: true
+
+config:
+  receivers:
+    kubeletstats:
+      collection_interval: {{ otel_collector_scrape_interval }}
+      # O kubelet serve com certificado auto-assinado e sem IP SAN -- padrao do
+      # kubeadm, que nao ativa serverTLSBootstrap. Sem isto o scrape morre em
+      # "x509: cannot validate certificate for <ip> because it doesn't contain
+      # any IP SANs" e o receiver entrega zero metrica. E o mesmo motivo do
+      # --kubelet-insecure-tls na role metrics-server.
+      insecure_skip_verify: true
+
+      # As metricas *_utilization sao razao (0 a 1) e exigem que o receiver leia
+      # limits, requests e capacity da API -- o /stats/summary do kubelet so
+      # entrega valor absoluto. Sem isto so da para chegar em percentual
+      # dividindo duas series diferentes na visualizacao.
+      k8s_api_config:
+        auth_type: serviceAccount
+
+      # As *.node.utilization precisam saber em qual node estao para buscar a
+      # capacity dele; sem isto o collector recusa a config na inicializacao
+      # ("node setting is required") e o pod entra em CrashLoopBackOff.
+      node: ${env:K8S_NODE_NAME}
+
+      # Todas desabilitadas por padrao no receiver.
+      metrics:
+        k8s.pod.cpu_limit_utilization:
+          enabled: true
+        k8s.pod.cpu_request_utilization:
+          enabled: true
+        k8s.pod.memory_limit_utilization:
+          enabled: true
+        k8s.pod.memory_request_utilization:
+          enabled: true
+        k8s.container.cpu_limit_utilization:
+          enabled: true
+        k8s.container.cpu_request_utilization:
+          enabled: true
+        k8s.container.memory_limit_utilization:
+          enabled: true
+        k8s.container.memory_request_utilization:
+          enabled: true
+        k8s.pod.cpu.node.utilization:
+          enabled: true
+        k8s.pod.memory.node.utilization:
+          enabled: true
+
+    hostmetrics:
+      collection_interval: {{ otel_collector_scrape_interval }}
+
+      # O analogo no host: o preset liga o scraper de cpu, mas nele so vem
+      # system.cpu.time (contador acumulado em segundos).
+      scrapers:
+        cpu:
+          metrics:
+            system.cpu.utilization:
+              enabled: true
+
+  processors:
+    # O limiter derruba o batch antes do collector estourar o limite do pod; sem
+    # ele o OOM kill leva junto o buffer inteiro.
+    memory_limiter:
+      check_interval: 5s
+      limit_percentage: 80
+      spike_limit_percentage: 20
+
+    batch:
+      timeout: 10s
+      send_batch_size: 1024
+
+  exporters:
+    otlp_grpc/data-prepper:
+      endpoint: {{ otel_collector_exporter_endpoint }}
+      tls:
+        insecure: true
+
+  service:
+    pipelines:
+      metrics:
+        receivers: [kubeletstats, hostmetrics]
+        processors: [memory_limiter, k8s_attributes, batch]
+        exporters: [otlp_grpc/data-prepper]
+
+      # O chart cria traces e logs por padrao apontando para um otlp que nao
+      # existe aqui. O null remove a chave no merge do helm; sem isto o log do
+      # collector enche de erro de conexao.
+      traces: null
+      logs: null

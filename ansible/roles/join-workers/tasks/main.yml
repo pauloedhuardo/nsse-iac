@@ -2,3 +2,7 @@
   vars:
     join_worker: "{{ lookup('file', '/tmp/kubeadm-join-worker.txt') }}"
   shell: "{{ join_worker }}"
+  args:
+    # Mesmo motivo da role join-control-planes: kubeadm join falha no preflight
+    # se o node ja estiver no cluster.
+    creates: /etc/kubernetes/kubelet.conf

@@ -1,0 +1,4 @@
+- name: Adding OpenSearch Project Repository
+  shell: |
+    helm repo add opensearch-project https://opensearch-project.github.io/helm-charts/
+    helm repo update

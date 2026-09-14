@@ -1,3 +1,7 @@
+# Cada role carrega uma tag com o proprio nome, para permitir reexecucao
+# pontual (ansible-playbook site.yml --tags otel-collector). Sem tag, as roles
+# usam include_tasks e os nomes das tasks internas nao existem estaticamente --
+# --start-at-task nao consegue alcanca-las.
 - name: Setting Up Cluster
   hosts: aws_ec2
   become: true
@@ -10,10 +14,10 @@
     - name: Gather Facts
       setup:
   roles:
-    - hostnames
-    - dependency-packages
-    - kube-packages
-    - container-runtime
+    - { role: hostnames, tags: [hostnames] }
+    - { role: dependency-packages, tags: [dependency-packages] }
+    - { role: kube-packages, tags: [kube-packages] }
+    - { role: container-runtime, tags: [container-runtime] }
 
 - name: Init Cluster
   hosts: control_planes[0]
@@ -21,10 +25,10 @@
   environment:
     KUBECONFIG: "{{ kube_config }}"
   roles:
-    - init-cluster
-    - cloud-controller-manager
-    - set-provider-id
-    - container-network
+    - { role: init-cluster, tags: [init-cluster] }
+    - { role: cloud-controller-manager, tags: [cloud-controller-manager] }
+    - { role: set-provider-id, tags: [set-provider-id] }
+    - { role: container-network, tags: [container-network] }
 
 - name: Join Control Planes
   hosts: control_planes:!control_planes[0]
@@ -32,9 +36,9 @@
   environment:
     KUBECONFIG: "{{ kube_config }}"
   roles:
-    - kubelet-extra-args
-    - join-control-planes
-    - set-provider-id
+    - { role: kubelet-extra-args, tags: [kubelet-extra-args] }
+    - { role: join-control-planes, tags: [join-control-planes] }
+    - { role: set-provider-id, tags: [set-provider-id] }
 
 - name: Join Workers
   hosts: workers
@@ -42,15 +46,15 @@
   environment:
     KUBECONFIG: "{{ kube_config_worker }}"
   roles:
-    - kubelet-extra-args
-    - join-workers
-    - set-provider-id
+    - { role: kubelet-extra-args, tags: [kubelet-extra-args] }
+    - { role: join-workers, tags: [join-workers] }
+    - { role: set-provider-id, tags: [set-provider-id] }
 
 - name: Update Launch Template
   hosts: localhost
   gather_facts: false
   roles:
-    - update-launch-template
+    - { role: update-launch-template, tags: [update-launch-template] }
 
 - name: Setting Up Cluster Auto Scaler
   hosts: control_planes[0]
@@ -58,18 +62,15 @@
   environment:
     KUBECONFIG: "{{ kube_config }}"
   roles:
-    - helm
-    - node-termination
-    - cluster-autoscaler
-    - argo-rollouts
-    - argocd
-    - metrics-server
-    - load-balancer-controller
-    - container-storage
-    - external-dns
-    - fluent-bit
-
-    
-
-
-  
+    - { role: helm, tags: [helm] }
+    - { role: node-termination, tags: [node-termination] }
+    - { role: cluster-autoscaler, tags: [cluster-autoscaler] }
+    - { role: argo-rollouts, tags: [argo-rollouts] }
+    - { role: argocd, tags: [argocd] }
+    - { role: metrics-server, tags: [metrics-server] }
+    - { role: load-balancer-controller, tags: [load-balancer-controller] }
+    - { role: container-storage, tags: [container-storage] }
+    - { role: external-dns, tags: [external-dns] }
+    - { role: fluent-bit, tags: [fluent-bit] }
+    - { role: data-prepper, tags: [data-prepper] }
+    - { role: otel-collector, tags: [otel-collector] }

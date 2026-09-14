@@ -1,0 +1,27 @@
+otel_collector_chart_version: "0.173.1"
+
+# O chart nao tem default para image.repository e falha se ficar vazio. A
+# variante -k8s ja traz kubeletstats, hostmetrics, k8s_cluster e k8sattributes;
+# a imagem core nao traz nenhum deles.
+otel_collector_image: otel/opentelemetry-collector-k8s
+
+# Fixado em vez de herdar o appVersion do chart: a task de validacao precisa
+# rodar exatamente a mesma imagem do workload, senao validaria uma versao do
+# binario diferente da que vai executar. Subir junto com o chart_version.
+otel_collector_image_tag: "0.160.0"
+
+otel_collector_namespace: observability
+
+# Duas releases do mesmo chart: os receivers tem cardinalidade diferente.
+# kubeletstats e hostmetrics precisam de um pod por node; k8s_cluster precisa de
+# exatamente um pod no cluster, senao cada replica duplica o estado.
+otel_collector_agent_release_name: otel-agent
+otel_collector_cluster_release_name: otel-cluster
+
+# O dominio e um t3.small.search de no unico com 10 GB de EBS. A 60s os tres
+# receivers juntos geravam ~48 MB/h, o que nao cabe na retencao de metricas.
+# Para metrica de infraestrutura 5 min resolve, e corta a ingestao em 5x.
+otel_collector_scrape_interval: 300s
+
+# Precisa bater com data_prepper_otel_metrics_port da role data-prepper.
+otel_collector_exporter_endpoint: data-prepper.observability.svc.cluster.local:21891

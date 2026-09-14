@@ -2,3 +2,9 @@
   vars:
     join_control_plane: "{{ lookup('file', '/tmp/kubeadm-join-control-plane.txt') }}"
   shell: "{{ join_control_plane }}"
+  args:
+    # kubeadm join nao e idempotente: num node que ja esta no cluster ele morre
+    # no preflight ("kubelet.conf already exists", "Port 10250 is in use") e
+    # derruba o playbook inteiro. Mesmo guard do kubeadm init na role
+    # init-cluster -- numa reexecucao a task e pulada em vez de falhar.
+    creates: /etc/kubernetes/kubelet.conf

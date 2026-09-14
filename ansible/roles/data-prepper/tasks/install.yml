@@ -1,0 +1,12 @@
+- name: Creating Data Prepper Values File
+  template:
+    src: values.yaml.j2
+    dest: /tmp/data-prepper-values.yaml
+
+- name: Installing Data Prepper
+  shell: |
+    helm upgrade --install {{ data_prepper_release_name }} opensearch-project/data-prepper \
+      --namespace {{ data_prepper_namespace }} \
+      --version {{ data_prepper_chart_version }} \
+      --values /tmp/data-prepper-values.yaml \
+      --wait --timeout 5m

@@ -1,0 +1,11 @@
+data_prepper_chart_version: "0.3.1"
+data_prepper_release_name: data-prepper
+data_prepper_namespace: observability
+data_prepper_pipelines_secret: data-prepper-pipelines
+
+# Porta padrao do otel_metrics_source. O otel-collector aponta para ela atraves
+# de otel_collector_exporter_endpoint -- as duas roles precisam concordar.
+data_prepper_otel_metrics_port: 21891
+
+# Prefixo do indice diario no OpenSearch: nsse-metrics-YYYY.MM.DD
+data_prepper_metrics_index_prefix: nsse-metrics

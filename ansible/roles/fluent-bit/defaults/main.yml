@@ -13,5 +13,7 @@ fluent_bit_namespaces:
 fluent_bit_exclude_pods:
   - fluent-bit
 
-# Prefixo do indice diario no OpenSearch: nsse-YYYY.MM.DD
-fluent_bit_index_prefix: nsse
+# Prefixo do indice diario no OpenSearch: nsse-logs-YYYY.MM.DD
+# Precisa casar com opensearch_logs_writer.index_patterns na stack
+# terraform/observability-security, senao o nsseViewer nao enxerga os indices.
+fluent_bit_index_prefix: nsse-logs
